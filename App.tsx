@@ -1,171 +1,75 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-  SafeAreaView,
-  StatusBar,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, TextInput, Button, FlatList, SafeAreaView } from 'react-native';
+import { Libro } from './models/Libro';
+import { LibroService } from './services/LibroService';
 
-import { Libro } from './src/models/Libro';
-import { LibroService } from './src/services/LibroService';
+const libroService = new LibroService();
 
 export default function App() {
-  // Instancia única del servicio mantenida en el estado del componente
-  const [servicio] = useState(() => new LibroService());
   const [libros, setLibros] = useState<Libro[]>([]);
-  
-  const [titulo, setTitulo] = useState('');
-  const [autor, setAutor] = useState('');
-  const [anio, setAnio] = useState('');
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
 
-  const mostrarAlerta = (tituloMsg: string, mensaje: string) => {
-    if (Platform.OS === 'web') {
-      alert(`${tituloMsg}: ${mensaje}`);
-    } else {
-      Alert.alert(tituloMsg, mensaje);
-    }
+  const cargarLibros = () => {
+    setLibros(libroService.obtenerLibros());
   };
 
-  const manejarAgregarLibro = () => {
-    console.log('Intentando agregar:', { titulo, autor, anio });
+  useEffect(() => {
+    cargarLibros();
+  }, []);
 
-    if (!titulo.trim() || !autor.trim() || !anio.trim()) {
-      mostrarAlerta('Atención', 'Por favor completa todos los campos.');
-      return;
-    }
+  const handleAgregar = () => {
+    if (!title.trim() || !author.trim()) return;
 
-    const anioNumero = parseInt(anio, 10);
-    const anioActual = new Date().getFullYear();
+    const nuevoLibro: Libro = {
+      id: Date.now().toString(),
+      title,
+      author
+    };
 
-    if (isNaN(anioNumero) || anioNumero < 1000 || anioNumero > anioActual) {
-      mostrarAlerta('Error', 'Ingresa un año de publicación válido.');
-      return;
-    }
-
-    // Guardar en el servicio y forzar la actualización con un nuevo arreglo
-    servicio.agregarLibro(titulo.trim(), autor.trim(), anioNumero);
-    setLibros([...servicio.obtenerLibros()]);
-
-    // Limpiar campos
-    setTitulo('');
-    setAutor('');
-    setAnio('');
+    libroService.agregarLibro(nuevoLibro);
+    setTitle('');
+    setAuthor('');
+    cargarLibros();
   };
 
-  const manejarEliminarLibro = (id: string, tituloLibro: string) => {
-    if (Platform.OS === 'web') {
-      if (confirm(`¿Deseas eliminar "${tituloLibro}"?`)) {
-        servicio.eliminarLibro(id);
-        setLibros([...servicio.obtenerLibros()]);
-      }
-    } else {
-      Alert.alert(
-        'Eliminar Libro',
-        `¿Deseas eliminar "${tituloLibro}"?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Eliminar',
-            style: 'destructive',
-            onPress: () => {
-              servicio.eliminarLibro(id);
-              setLibros([...servicio.obtenerLibros()]);
-            },
-          },
-        ]
-      );
-    }
+  const handleEliminar = (id: string) => {
+    libroService.eliminarLibro(id);
+    cargarLibros();
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <Text style={styles.header}>📚 Mis Libros</Text>
 
-      <View style={styles.header}>
-        <Text style={styles.headerBadge}>MIS LIBROS</Text>
-        <Text style={styles.headerTitle}>Gestión de Biblioteca</Text>
-        <Text style={styles.headerSubtitle}>POO & Separación de Responsabilidades</Text>
+      <View style={styles.form}>
+        <TextInput
+          style={styles.input}
+          placeholder="Título del libro"
+          value={title}
+          onChangeText={setTitle}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Autor"
+          value={author}
+          onChangeText={setAuthor}
+        />
+        <Button title="Agregar Libro" onPress={handleAgregar} />
       </View>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.formContainer}
-      >
-        <View style={styles.form}>
-          <Text style={styles.formHeader}>Nuevo Libro</Text>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Título del libro"
-            placeholderTextColor="#A0A0A0"
-            value={titulo}
-            onChangeText={setTitulo}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Autor"
-            placeholderTextColor="#A0A0A0"
-            value={autor}
-            onChangeText={setAutor}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Año de publicación (ej. 2024)"
-            placeholderTextColor="#A0A0A0"
-            value={anio}
-            onChangeText={setAnio}
-            keyboardType="numeric"
-            maxLength={4}
-          />
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={manejarAgregarLibro}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.buttonText}>+ Agregar Libro</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
 
       <FlatList
         data={libros}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardInfo}>
-              <Text style={styles.cardTitle}>{item.titulo}</Text>
-              <Text style={styles.cardAuthor}>{item.autor}</Text>
-              <View style={styles.cardYearTag}>
-                <Text style={styles.cardYearText}>{item.anio}</Text>
-              </View>
+          <View style={styles.item}>
+            <View>
+              <Text style={styles.itemTitle}>{item.title}</Text>
+              <Text style={styles.itemAuthor}>{item.author}</Text>
             </View>
-
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => manejarEliminarLibro(item.id, item.titulo)}
-            >
-              <Text style={styles.deleteButtonText}>Eliminar</Text>
-            </TouchableOpacity>
+            <Button title="Eliminar" color="red" onPress={() => handleEliminar(item.id)} />
           </View>
         )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📖</Text>
-            <Text style={styles.emptyText}>No hay libros registrados</Text>
-            <Text style={styles.emptySubText}>Agrega un libro en el formulario superior.</Text>
-          </View>
-        }
       />
     </SafeAreaView>
   );
@@ -174,148 +78,40 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EEF2F5',
+    padding: 20,
+    backgroundColor: '#fff',
+    marginTop: 40,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-    alignItems: 'center',
-  },
-  headerBadge: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#6C63FF',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  headerTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#2D3436',
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: '#636E72',
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  formContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
   },
   form: {
-    backgroundColor: '#FFFFFF',
-    padding: 18,
-    borderRadius: 16,
-    elevation: 4,
-  },
-  formHeader: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2D3436',
-    marginBottom: 12,
-    textAlign: 'center',
+    marginBottom: 20,
   },
   input: {
-    backgroundColor: '#F8F9FA',
     borderWidth: 1,
-    borderColor: '#E9ECEF',
-    borderRadius: 10,
-    height: 46,
-    paddingHorizontal: 14,
+    borderColor: '#ccc',
+    padding: 10,
+    borderRadius: 5,
     marginBottom: 10,
-    fontSize: 15,
-    color: '#2D3436',
   },
-  button: {
-    backgroundColor: '#6C63FF',
-    height: 46,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 4,
-    ...(Platform.OS === 'web' && { cursor: 'pointer' }),
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
+  item: {
     flexDirection: 'row',
-    padding: 14,
-    borderRadius: 14,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
-    elevation: 2,
-    borderLeftWidth: 4,
-    borderLeftColor: '#6C63FF',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  cardInfo: {
-    flex: 1,
-  },
-  cardTitle: {
+  itemTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#2D3436',
+    fontWeight: 'bold',
   },
-  cardAuthor: {
-    fontSize: 13,
-    color: '#636E72',
-    fontWeight: '500',
-    marginVertical: 2,
-  },
-  cardYearTag: {
-    backgroundColor: '#FF6584',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginTop: 2,
-  },
-  cardYearText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  deleteButton: {
-    backgroundColor: 'rgba(255, 118, 117, 0.15)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginLeft: 8,
-    ...(Platform.OS === 'web' && { cursor: 'pointer' }),
-  },
-  deleteButtonText: {
-    color: '#FF7675',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 40,
-    padding: 20,
-  },
-  emptyIcon: {
-    fontSize: 40,
-    marginBottom: 10,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#636E72',
-  },
-  emptySubText: {
-    fontSize: 13,
-    color: '#A0A0A0',
-    marginTop: 4,
-    textAlign: 'center',
+  itemAuthor: {
+    fontSize: 14,
+    color: '#666',
   },
 });
