@@ -5,7 +5,6 @@ export class LibroService {
   private repository: LibroRepository;
 
   constructor() {
-    
     this.repository = LibroRepository.getInstance();
   }
 

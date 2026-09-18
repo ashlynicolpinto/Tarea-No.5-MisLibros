@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, Button, FlatList, SafeAreaView } from 'react-native';
-import { Libro } from './models/Libro';
-import { LibroService } from './services/LibroService';
+import { Libro } from './src/models/Libro';
+import { LibroService } from './src/services/LibroService';
 
 const libroService = new LibroService();
 
@@ -40,7 +40,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>📚 Mis Libros</Text>
+      <Text style={styles.header}>Mis Libros</Text>
 
       <View style={styles.form}>
         <TextInput
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffd7d7',
     marginTop: 40,
   },
   header: {
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#ffb6e8',
     padding: 10,
     borderRadius: 5,
     marginBottom: 10,
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#ffc2e6',
   },
   itemTitle: {
     fontSize: 16,
